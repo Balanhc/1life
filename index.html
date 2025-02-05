@@ -5,22 +5,28 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>1Life Health - Chatbot & Booking</title>
     <style>
-        body {
+        html, body {
             font-family: Arial, sans-serif;
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
+            justify-content: flex-start;
             height: 100vh;
             background-color: #f4f4f4;
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
         }
         h1 { text-align: center; }
         .container {
-            width: 400px;
+            width: 90%;
+            max-width: 400px;
             background: white;
             padding: 20px;
             border-radius: 8px;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+            overflow: auto;
         }
         #chat-box {
             height: 300px;
@@ -32,9 +38,10 @@
         #user-input {
             display: flex;
         }
-        input {
+        input, select {
             flex-grow: 1;
             padding: 10px;
+            margin-right: 10px;
         }
         button {
             padding: 10px;
@@ -53,7 +60,7 @@
 </head>
 <body>
     <h1>1Life Health</h1>
-    <div class="container">
+    <div class="container" style="flex-grow: 1; overflow: auto;">
         <h2>Chatbot</h2>
         <div id="chat-box"></div>
         <div id="user-input">
@@ -62,9 +69,12 @@
         </div>
     </div>
     
-    <div class="container">
+    <div class="container" style="flex-grow: 1; overflow: auto;">
         <h2>Book an Appointment</h2>
-        <iframe src="YOUR_GOOGLE_CALENDAR_BOOKING_LINK"></iframe>
+        <label for="appointment-date">Select a date:</label>
+        <input type="date" id="appointment-date">
+        <button onclick="scheduleAppointment()">Schedule Appointment</button>
+        <iframe id="calendar" src="https://calendar.google.com/calendar/embed?src=YOUR_GOOGLE_CALENDAR_ID&ctz=YOUR_TIMEZONE"></iframe>
     </div>
     
     <script>
@@ -90,12 +100,34 @@
                     })
                 });
                 
+                if (response.status === 429) {
+                    chatBox.innerHTML += `<p><strong>Bot:</strong> Rate limit exceeded. Please try again later.</p>`;
+                    return;
+                }
+                
                 const data = await response.json();
-                chatBox.innerHTML += `<p><strong>Bot:</strong> ${data.choices[0].message.content}</p>`;
+                chatBox.innerHTML += `<p><strong>Bot:</strong> ${data.choices[0]?.message?.content || "No response from OpenAI."}</p>`;
             } catch (error) {
                 console.error("Error:", error);
                 chatBox.innerHTML += `<p><strong>Bot:</strong> Error communicating with OpenAI.</p>`;
             }
+        }
+        
+        function scheduleAppointment() {
+            const dateInput = document.getElementById("appointment-date").value;
+            if (!dateInput) {
+                alert("Please select a date for your appointment.");
+                return;
+            }
+            
+            const startDate = new Date(dateInput + 'T10:00:00');
+            const endDate = new Date(dateInput + 'T10:30:00');
+            
+            const startTime = startDate.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+            const endTime = endDate.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+            
+            const eventLink = `https://calendar.google.com/calendar/u/0/r/eventedit?dates=${startTime}/${endTime}&text=Doctor%20Appointment&location=Online&details=Scheduled%20appointment%20with%20doctor`;
+            window.open(eventLink, "_blank");
         }
     </script>
 </body>
